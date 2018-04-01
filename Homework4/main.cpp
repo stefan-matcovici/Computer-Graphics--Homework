@@ -80,6 +80,9 @@ public:
 
 	void deseneazaPixel(int line, int column)
 	{
+		if (line > LINES || column > COLUMNS || line < 0 || column < 0) {
+			return;
+		}
 		glColor3f(0.1, 0.1, 0.1); // rosu
 
 		double min = width > height ? height : width;
@@ -134,6 +137,7 @@ public:
 	}
 
 	std::vector<Punct> deseneazaLinieAlgoritm(int x0, int y0, int xn, int yn, int stoke) {
+
 		double m = ((double)yn - (double)y0) / ((double)xn - (double)x0);
 		if (m > 0) {
 			if (abs(yn - y0) < abs(xn - x0)) {
