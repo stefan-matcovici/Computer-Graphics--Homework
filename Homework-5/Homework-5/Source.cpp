@@ -6,8 +6,8 @@
 
 #include "glut.h"
 
-#define LINES 15
-#define COLUMNS 15
+#define LINES 26
+#define COLUMNS 26
 #define MARGIN 0.1
 #define DIM 300
 #define PI 3.1415926f
@@ -53,7 +53,7 @@ public:
 	}
 
 	void display() {
-		glColor3f(1, 0.1, 0.1); // rosu
+		glColor3f(0.1, 0.1, 0.1); // rosu
 
 		printf("%d, %d\n", width, height);
 
@@ -174,7 +174,100 @@ public:
 		for (std::vector<Punct>::iterator it = list.begin(); it != list.end(); ++it) {
 			deseneazaPixel(it->getX(), it->getY());
 		}
+	}
 
+	void deseneazaElipsa(int x, int y, int a, int b, int stoke) {
+		glColor3f(1.0, 0.1, 0.1); // rosu
+		glLineWidth(4.f);
+
+		double min = width > height ? height : width;
+
+		float cx, cy;
+		getXY(x, y, cx, cy);
+
+		double xmax = (double)width / (double)min + MARGIN;
+		double ymax = (double)height / (double)min + MARGIN;
+
+		double xymin = xmax > ymax ? ymax : xmax;
+
+		float rx = (2.0 / (double)COLUMNS * (x + a) - 1) / xmax;
+		float ry = (2.0 / (double)LINES * (y + b) - 1) / ymax;
+
+		double ra = rx - cx;
+		double rb = ry - cy;
+
+		int num_segments = 1000;
+		glBegin(GL_LINE_LOOP);
+		for (int ii = 0; ii < num_segments; ii++)
+		{
+			float theta = 2.0f * 3.1415926f * float(ii) / float(num_segments);//get the current angle
+
+			float x = ra * cosf(theta);//calculate the x component
+			float y = rb * sinf(theta);//calculate the y component
+
+			glVertex2f((double)x + cx, ((double)y + cy));//output vertex
+
+		}
+		glEnd();
+
+		std::vector<Punct> list = deseneazaElipsaAlgoritm(x, y, a, b, stoke);
+
+		for (std::vector<Punct>::iterator it = list.begin(); it != list.end(); ++it) {
+			deseneazaPixel(it->getX(), it->getY());
+		}
+	}
+
+	std::vector<Punct> deseneazaElipsaAlgoritm(int x0, int y0, double a, double b, int stoke) {
+		std::vector<Punct> puncte;
+
+		int x = -a;
+		int y = 0;
+
+		double d2 = b * b * (-a + 0.5) * (-a + 0.5) + a * a - a * a * b * b;
+		double d1;
+
+		puncte.push_back(Punct(x + x0, y + y0));
+		for (int i = x; i < 0; i++) {
+			puncte.push_back(Punct(x + x0 - i, y + y0));
+		}
+		while (a * a * (y - 1) > b * b * (x + 0.5)) {
+			if (d2 > 0) {
+				// selectam SE
+				d2 += b * b * (2 * x + 2) + a * a * (-2 * y + 3);
+				x++;
+				y--;
+			}
+			else {
+				// selectam S
+				d2 += a * a * (-2 * y + 3);
+				y--;
+			}
+
+			for (int i = x; i < 0; i++) {
+				puncte.push_back(Punct(x + x0 - i, y + y0));
+			}
+		}
+
+		d1 = b * b * (x + 1) * (x + 1) + a * a * (y - 0.5) * (y - 0.5) - a * a * b * b;
+		while (y > -b) {
+			if (d1 > 0) {
+				// selectam E
+				d1 += b * b * (2 * x + 3);
+				x++;
+			}
+			else {
+				// selectam SE
+				d1 += b * b * (2 * x + 3) + a * a * (-2 * y + 2);
+				x++;
+				y--;
+			}
+
+			for (int i = x; i < 0; i++) {
+				puncte.push_back(Punct(x + x0 - i, y + y0));
+			}
+		}
+
+		return puncte;
 	}
 
 	std::vector<Punct> deseneazaCercAlgoritm(int x0, int y0, double raza, int stoke) {
@@ -452,7 +545,9 @@ void Display(void) {
 
 	//grilaCarteziana.deseneazaLinie(0, 0, 15, 7, 1);
 
-	grilaCarteziana.deseneazaCerc(0, 0, 13, 3);
+	//grilaCarteziana.deseneazaCerc(0, 0, 13, 1);
+
+	grilaCarteziana.deseneazaElipsa(13, 8, 13, 8, 1);
 
 
 	glFlush();
