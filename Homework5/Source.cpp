@@ -1,16 +1,25 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <vector>
 #include <stdlib.h>
-
+#include <iostream>
+#include <fstream>
+#include <string>
 #include "glut.h"
+#include <map>
+#include <set>
+#include <algorithm>    // std::min
 
-#define LINES 26
-#define COLUMNS 26
+#define LINES 15
+#define COLUMNS 15
 #define MARGIN 0.1
 #define DIM 300
 #define PI 3.1415926f
+
+using namespace std;
 
 int width = DIM;
 int height = DIM;
@@ -20,6 +29,11 @@ unsigned char prevKey;
 
 class Punct {
 public:
+	Punct() {
+		this->x = 0;
+		this->y = 0;
+	}
+
 	Punct(int x, int y) {
 		this->x = x;
 		this->y = y;
@@ -45,6 +59,42 @@ private:
 	int x, y;
 };
 
+struct Muchie {
+	Muchie(Punct vi, Punct vf) {
+		this->vi = vi;
+		this->vf = vf;
+	}
+
+	Punct vi, vf;
+};
+
+class Poligon {
+public:
+	vector<Muchie> muchii;
+};
+
+struct Intersectie {
+	Intersectie(int ymax, double xmin, double ratia) {
+		this->ymax = ymax;
+		this->xmin = xmin;
+		this->ratia = ratia;
+	}
+
+	Intersectie(const Intersectie& intersectie) {
+		this->ymax = intersectie.ymax;
+		this->xmin = intersectie.xmin;
+		this->ratia = intersectie.ratia;
+	}
+
+	bool operator< (const Intersectie& i) {
+		return this->xmin < i.xmin;
+	}
+
+	int ymax;
+	double xmin;
+	double ratia;
+};
+
 class GrilaCarteziana {
 public:
 	GrilaCarteziana(int lines, int columns) {
@@ -53,7 +103,7 @@ public:
 	}
 
 	void display() {
-		glColor3f(0.1, 0.1, 0.1); // rosu
+		glColor3f(1, 0.1, 0.1); // rosu
 
 		printf("%d, %d\n", width, height);
 
@@ -63,17 +113,17 @@ public:
 		double ymax = (double)height / (double)min + MARGIN;
 
 
-		for (double i = 0; i < COLUMNS + 1; i++) {
+		for (double i = 0; i < this->columns + 1; i++) {
 			glBegin(GL_LINE_STRIP);
-				glVertex2f(-1.0 / xmax, (2.0 / (double)COLUMNS * i - 1) / ymax);
-				glVertex2f(1.0 / xmax, (2.0 / (double)COLUMNS * i - 1) / ymax);
+			glVertex2f(-1.0 / xmax, (2.0 / (double)this->columns * i - 1) / ymax);
+			glVertex2f(1.0 / xmax, (2.0 / (double)this->columns * i - 1) / ymax);
 			glEnd();
 		}
 
-		for (double i = 0; i < LINES + 1; i++) {
+		for (double i = 0; i < this->lines + 1; i++) {
 			glBegin(GL_LINE_STRIP);
-				glVertex2f((2.0 / (double)LINES * i - 1) / xmax, -1.0 / ymax);
-				glVertex2f((2.0 / (double)LINES * i - 1) / xmax, 1.0 / ymax);
+			glVertex2f((2.0 / (double)this->lines * i - 1) / xmax, -1.0 / ymax);
+			glVertex2f((2.0 / (double)this->lines * i - 1) / xmax, 1.0 / ymax);
 			glEnd();
 		}
 	}
@@ -82,21 +132,23 @@ public:
 	{
 		glColor3f(0.1, 0.1, 0.1); // rosu
 
+		//printf("(%d, %d)\n", line, column);
+
 		double min = width > height ? height : width;
 
 		double xmax = (double)width / (double)min + MARGIN;
 		double ymax = (double)height / (double)min + MARGIN;
 
-		float cx = (2.0 / (double)COLUMNS * line - 1) / xmax;
-		float cy = (2.0 / (double)LINES * column - 1) / ymax;
+		float cx = (2.0 / (double)this->columns * line - 1) / xmax;
+		float cy = (2.0 / (double)this->lines * column - 1) / ymax;
 
 		double xymin = xmax > ymax ? ymax : xmax;
 
-		printf("%2f\n", cx);
-		printf("%2f\n", cy);
+		//printf("%2f\n", cx);
+		//printf("%2f\n", cy);
 
 
-		float r = xymin / (LINES > COLUMNS ? COLUMNS * 2 : LINES * 2);
+		float r = xymin / (this->lines > this->columns ? this->lines * 2 : this->columns * 2);
 
 		int num_segments = 25;
 
@@ -124,8 +176,8 @@ public:
 		getXY(xn, yn, cxn, cyn);
 
 		glBegin(GL_LINE_STRIP);
-			glVertex2f(cx0, cy0);
-			glVertex2f(cxn, cyn);
+		glVertex2f(cx0, cy0);
+		glVertex2f(cxn, cyn);
 		glEnd();
 		glLineWidth(1.f);
 
@@ -150,8 +202,8 @@ public:
 
 		double xymin = xmax > ymax ? ymax : xmax;
 
-		float rx = (2.0 / (double)COLUMNS * (x + raza) - 1) / xmax;
-		float ry = (2.0 / (double)LINES * y - 1) / ymax;
+		float rx = (2.0 / (double)this->columns * (x + raza) - 1) / xmax;
+		float ry = (2.0 / (double)this->lines * y - 1) / ymax;
 
 		double r = rx - cx;
 
@@ -164,16 +216,58 @@ public:
 			float x = r * cosf(theta);//calculate the x component
 			float y = r * sinf(theta);//calculate the y component
 
-			glVertex2f((double)x  + cx, ((double)y + cy));//output vertex
+			glVertex2f((double)x + cx, ((double)y + cy));//output vertex
 
 		}
 		glEnd();
+		glLineWidth(1.f);
 
 		std::vector<Punct> list = deseneazaCercAlgoritm(x, y, raza, stoke);
 
 		for (std::vector<Punct>::iterator it = list.begin(); it != list.end(); ++it) {
 			deseneazaPixel(it->getX(), it->getY());
 		}
+
+	}
+
+	std::vector<Punct> deseneazaCercAlgoritm(int x0, int y0, double raza, int stoke) {
+		std::vector<Punct> puncte;
+		int x = raza;
+		int y = 0;
+
+		puncte.push_back(Punct(x, y));
+		for (int i = 1; i <= stoke / 2; i++) {
+			puncte.push_back(Punct(x - i, y));
+			puncte.push_back(Punct(x + i, y));
+		}
+		int d = 1 - raza;
+		int dN = 3;
+		int dNW = -2 * raza + 5;
+
+		while (x > y) {
+			if (d > 0) {
+				// NW
+				d += dNW;
+				dN += 2;
+				dNW += 4;
+				x--;
+			}
+			else {
+				// N
+				d += dN;
+				dN += 2;
+				dNW += 2;
+			}
+			y++;
+
+			puncte.push_back(Punct(x, y));
+			for (int i = 1; i <= stoke / 2; i++) {
+				puncte.push_back(Punct(x - i, y));
+				puncte.push_back(Punct(x + i, y));
+			}
+		}
+
+		return puncte;
 	}
 
 	void deseneazaElipsa(int x, int y, int a, int b, int stoke) {
@@ -190,8 +284,8 @@ public:
 
 		double xymin = xmax > ymax ? ymax : xmax;
 
-		float rx = (2.0 / (double)COLUMNS * (x + a) - 1) / xmax;
-		float ry = (2.0 / (double)LINES * (y + b) - 1) / ymax;
+		float rx = (2.0 / (double)this->columns * (x + a) - 1) / xmax;
+		float ry = (2.0 / (double)this->lines * (y + b) - 1) / ymax;
 
 		double ra = rx - cx;
 		double rb = ry - cy;
@@ -209,6 +303,7 @@ public:
 
 		}
 		glEnd();
+		glLineWidth(1.f);
 
 		std::vector<Punct> list = deseneazaElipsaAlgoritm(x, y, a, b, stoke);
 
@@ -264,46 +359,6 @@ public:
 
 			for (int i = x; i < 0; i++) {
 				puncte.push_back(Punct(x + x0 - i, y + y0));
-			}
-		}
-
-		return puncte;
-	}
-
-	std::vector<Punct> deseneazaCercAlgoritm(int x0, int y0, double raza, int stoke) {
-		std::vector<Punct> puncte;
-		int x = raza;
-		int y = 0;
-
-		puncte.push_back(Punct(x, y));
-		for (int i = 1; i <= stoke / 2; i++) {
-			puncte.push_back(Punct(x - i, y));
-			puncte.push_back(Punct(x + i, y));
-		}
-		int d = 1 - raza;
-		int dN = 3;
-		int dNW = -2 * raza + 5;
-
-		while (x > y) {
-			if (d > 0) {
-				// NW
-				d += dNW;
-				dN += 2;
-				dNW += 4;
-				x--;
-			}
-			else {
-				// N
-				d += dN;
-				dN += 2;
-				dNW += 2;
-			}
-			y++;
-
-			puncte.push_back(Punct(x, y));
-			for (int i = 1; i <= stoke / 2; i++) {
-				puncte.push_back(Punct(x - i, y));
-				puncte.push_back(Punct(x + i, y));
 			}
 		}
 
@@ -507,6 +562,239 @@ public:
 		return puncte;
 	}
 
+	void deseneazaPoligon(const char* fisier) {
+		FILE* file;
+		Poligon poligon;
+		int n;
+		int x1, x2;
+		file = fopen(fisier, "r");
+		if (file) {
+			fscanf(file, "%d", &n);
+			fscanf(file, "%d %d", &x1, &x2);
+			Punct punct1(x1, x2);
+			Punct initial(x1, x2);
+
+			for (int i = 1; i < n; i++) {
+				fscanf(file, "%d %d", &x1, &x2);
+
+				Punct punct2(x1, x2);
+				poligon.muchii.push_back(Muchie(punct1, punct2));
+				punct1.setX(x1);
+				punct1.setY(x2);
+			}
+
+			poligon.muchii.push_back(Muchie(punct1, initial));
+
+		}
+
+		float cx, cy;
+
+		glColor3f(1.0, 0.1, 0.1); // rosu
+		glLineWidth(4.f);
+		glBegin(GL_LINE_LOOP);
+		for (int i = 0; i < poligon.muchii.size(); i++) {
+			getXY(poligon.muchii.at(i).vi.getX(), poligon.muchii.at(i).vi.getY(), cx, cy);
+			glVertex2f(cx, cy);
+		}
+		glEnd();
+		glLineWidth(1.f);
+
+		map <int, vector<Intersectie>> et, ssms;
+		initializareEt(poligon, et);
+
+		/*for (auto it = et.begin(); it != et.end(); it++) {
+			printf("[%d]: ", it->first);
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+				printf("(%d, %f, %f), ", it2->ymax, it2->xmin, it2->ratia);
+			}
+			printf("\n");
+		}*/
+
+		calculssm(poligon, et, ssms);
+
+		/*for (auto it = ssms.begin(); it != ssms.end(); it++) {
+			printf("[%d]: ", it->first);
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+				printf("(%d, %f, %f), ", it2->ymax, it2->xmin, it2->ratia);
+			}
+			printf("\n");
+		}*/
+
+		coloreaza(ssms);
+	}
+
+	void initializareEt(Poligon poligon, map <int, vector<Intersectie>>& et) {
+		int xm, ym, xM, yM;
+		bool change;
+
+		for (int i = 0; i < 20; i++) {
+			vector<Intersectie> v;
+			et.insert(pair<int, vector<Intersectie>>(i, v));
+		}
+
+		for (Muchie m : poligon.muchii) {
+			if (m.vi.getY() != m.vf.getY()) {
+				ym = min(m.vi.getY(), m.vf.getY());
+				yM = max(m.vi.getY(), m.vf.getY());
+				xm = (ym == m.vi.getY()) ? m.vi.getX() : m.vf.getX();
+				xM = (yM == m.vi.getY()) ? m.vi.getX() : m.vf.getX();
+				//printf("%d\n", ym);
+				et.find(ym)->second.push_back(Intersectie(yM, xm, (double)(xm - xM) / (ym - yM)));
+			}
+		}
+
+		for (int i = 0; i < 20; i++) {
+			vector<Intersectie> curent = et.find(i)->second;
+			sort(curent.begin(), curent.end());
+
+
+			/*do {
+				change = false;
+				vector<Intersectie> curent = et.find(i)->second;
+				if (curent.size() == 0)
+					break;
+
+				for (int j = 0; j < curent.size()-1; j++) {
+					if (curent.at(j).xmin > curent.at(j + 1).xmin) {
+						swap(curent.at(j), curent.at(j + 1));
+						change = true;
+					}
+				}
+			} while (change);*/
+		}
+	}
+
+	void calculssm(Poligon poligon, map <int, vector<Intersectie>>& et, map <int, vector<Intersectie>>& finalET) {
+		vector<Intersectie> activeSSM;
+
+		int y, k;
+
+		for (int i = 0; i < 20; i++) {
+			vector<Intersectie> v;
+			finalET.insert(pair<int, vector<Intersectie>>(i, v));
+		}
+
+		y = -1;
+		for (int i = 0; i < 20; i++) {
+			if (!et.find(i)->second.empty()) {
+				y = i;
+				break;
+			}
+		}
+
+		if (y < 0 || y>20) {
+			return;
+		}
+
+		do {
+			activeSSM.insert(activeSSM.end(), et.find(y)->second.begin(), et.find(y)->second.end());
+			
+			int ii = 0;
+			while (ii<activeSSM.size()) {
+				if (activeSSM.at(ii).ymax == y) {
+					activeSSM.erase(activeSSM.begin() + ii);
+				}
+				else {
+					ii++;
+				}
+			}
+
+			k = activeSSM.size();
+
+			sort(activeSSM.begin(), activeSSM.end());
+
+			/*while (k >= 1) {
+				for (int i = 0; i < k-1; i++) {
+					if (activeSSM.at(i).xmin > activeSSM.at(i + 1).xmin) {
+						swap(activeSSM.at(i), activeSSM.at(i + 1));
+					}
+				}
+
+				k--;
+			}*/
+
+			for (auto it = activeSSM.begin(); it != activeSSM.end(); it++) {
+				Intersectie deepCopy = Intersectie(*it);
+				finalET.find(y)->second.push_back(deepCopy);
+			}
+			y++;
+
+			for (int i = 0; i < activeSSM.size(); i++) {
+				if (activeSSM.at(i).ratia != 0) {
+					activeSSM.at(i).xmin += activeSSM.at(i).ratia;
+				}
+			}
+		} while ((!activeSSM.empty() || !et.find(y)->second.empty()) && y<20);
+	}
+
+	void coloreaza(map <int, vector<Intersectie>> ssms) {
+		for (auto it = ssms.begin(); it != ssms.end(); it++) {
+			// parcurgem lista de intersectii pentru fiecare dreapta de scanare
+			bool paritate = false;
+
+			int y = it->first; // dreapta de scanare y = y
+			vector<Intersectie> intersectii = it->second;
+			if (intersectii.size() == 0)
+				// daca nu intersecteaza in niciun punct continuam
+				continue;
+
+			vector<Intersectie>::iterator curent = intersectii.begin();
+			// calculam extremitatile, cea din stanga o sa fie interioara, cea din dreapta nu
+			int extremitate_stanga = intersectii.begin()->xmin;
+			int extremitate_dreapta = next(intersectii.end(), -1)->xmin;
+
+			//printf("%d stanga: %d, dreapta: %d\n", y, extremitate_stanga, extremitate_dreapta);
+
+			for (int i = 0; i < 20 && curent!=intersectii.end(); i++) {
+				// parcurgem domeniul
+
+				// puncte de intersectie (Q/Z)xZ
+				if ((int)curent->xmin != curent->xmin) {
+					if (paritate && (int)floor(curent->xmin) == i-1) {
+						// intrare in poligon
+						paritate = !paritate;
+						curent = next(curent, 1);
+					}
+					else if (!paritate && (int)ceil((curent->xmin)) == i) {
+						// iesire in poligon
+						paritate = !paritate;
+						curent = next(curent, 1);
+					}
+				}
+				else {
+					if (next(curent) != intersectii.end() && curent->xmin == next(curent)->xmin && (y != next(curent)->ymax || y != curent->ymax) && i == curent->xmin) {
+						// punctul este varf al poligonului si nu este macar pentru o dreapta ymax
+						paritate = 1;
+						curent = next(curent, 2);
+					}
+					// extremitati
+					else if (i == extremitate_stanga || i == extremitate_dreapta) {
+						paritate = !paritate;
+						curent = next(curent, 1);
+					}
+					
+				}
+
+				bool ok = false;
+				while (curent != intersectii.end() && i > curent->xmin) {
+					// daca punctul este inaintea urmatoarei intersectii
+					curent = next(curent);
+					ok = true;
+				}
+
+				if (ok && curent == intersectii.end()) {
+					break;
+				}
+
+				if (paritate) {
+					deseneazaPixel(i, y);
+				}
+
+			}
+
+		}
+	}
+
 private:
 	int lines;
 	int columns;
@@ -517,8 +805,8 @@ private:
 		double xmax = (double)width / (double)min + MARGIN;
 		double ymax = (double)height / (double)min + MARGIN;
 
-		outX = (2.0 / (double)COLUMNS * (double)line - 1) / xmax;
-		outY = (2.0 / (double)LINES * (double)column - 1) / ymax;
+		outX = (2.0 / (double)this->columns * (double)line - 1) / xmax;
+		outY = (2.0 / (double)this->lines * (double)column - 1) / ymax;
 	}
 };
 
@@ -535,19 +823,36 @@ void Init(void) {
 
 void Display(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
+	GrilaCarteziana grilaCarteziana1(15, 15);
+	GrilaCarteziana grilaCarteziana2(26, 26);
+	GrilaCarteziana grilaCarteziana3(14, 14);
 
-	GrilaCarteziana grilaCarteziana(LINES, COLUMNS);
-	grilaCarteziana.display();
+	switch (prevKey)
+	{
+	case '0':
+		grilaCarteziana1.display();
+		grilaCarteziana1.deseneazaCerc(0, 0, 13, 3);
+		break;
+	case '1':
+		grilaCarteziana2.display();
+		grilaCarteziana2.deseneazaElipsa(13, 8, 13, 8, 1);
+		break;
+	case '2':
+		grilaCarteziana3.display();
+		grilaCarteziana3.deseneazaPoligon("poligon.txt");
+		break;
+	default:
+		break;
+	}
+
+	glFlush();
+
 	//grilaCarteziana.deseneazaPixel(5, 5);
 	//grilaCarteziana.deseneazaPixel(5, 6);
 
 	//grilaCarteziana.deseneazaLinie(0, 15, 15, 10, 3);
 
 	//grilaCarteziana.deseneazaLinie(0, 0, 15, 7, 1);
-
-	//grilaCarteziana.deseneazaCerc(0, 0, 13, 1);
-
-	grilaCarteziana.deseneazaElipsa(13, 8, 13, 8, 1);
 
 
 	glFlush();
