@@ -139,7 +139,7 @@ public:
 	std::vector<Punct> deseneazaLinieAlgoritm(int x0, int y0, int xn, int yn, int stoke) {
 
 		double m = ((double)yn - (double)y0) / ((double)xn - (double)x0);
-		if (m > 0) {
+		if (m>0) {
 			if (abs(yn - y0) < abs(xn - x0)) {
 				if (x0 > xn)
 					return deseneazaLinieXPositive(xn, yn, x0, y0, stoke);
@@ -233,12 +233,12 @@ public:
 		while (y < yn)
 		{
 			if (d > 0) {
-				/* alegem S */
+				/* alegem E */
 				d += dE;
 				y++;
 			}
 			else {
-				/* alegem SE */
+				/* alegem NE */
 				d += dNE;
 				x++;
 				y++;
@@ -371,6 +371,8 @@ void Display(void) {
 	grilaCarteziana.deseneazaLinie(0, 15, 15, 10, 3);
 
 	grilaCarteziana.deseneazaLinie(0, 0, 15, 7, 1);
+
+	grilaCarteziana.deseneazaLinie(15, 15, 7, 0, 3);
 
 
 	glFlush();
