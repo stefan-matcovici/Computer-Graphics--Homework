@@ -127,9 +127,9 @@ void Display4() {
 }
 
 void random_triangle_coordinates(float& x, float& y, float& z) {
-	x = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
-	y = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
-	z = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
+	x = -5 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
+	y = -5 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
+	z = -5 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/10.0);
 }
 
 void Display51() {
@@ -188,7 +188,7 @@ void Display55() {
 	sinus = (triunghi.p2.y - triunghi.p1.y) / d2;
 	float phi = atan2f(sinus, cosinus) * 180 / PI;
 
-	float x3 = ((triunghi.p2.z - triunghi.p2.z)*(triunghi.p3.x - triunghi.p1.x) - (triunghi.p2.x - triunghi.p1.x)*(triunghi.p3.z - triunghi.p1.z)) / d1;
+	float x3 = ((triunghi.p2.z - triunghi.p1.z)*(triunghi.p3.x - triunghi.p1.x) - (triunghi.p2.x - triunghi.p1.x)*(triunghi.p3.z - triunghi.p1.z)) / d1;
 	float y3 = (d1*d1*(triunghi.p3.y - triunghi.p1.y) - (triunghi.p2.y - triunghi.p1.y)*((triunghi.p2.x - triunghi.p1.x)*(triunghi.p3.x - triunghi.p1.x) + (triunghi.p2.z - triunghi.p1.z)*(triunghi.p3.z - triunghi.p1.z))) / (d1*d2);
 
 	float d3 = sqrtf(powf(x3, 2.0) + powf(y3, 2.0));
@@ -225,6 +225,38 @@ void DisplayObiect()
 	}
 }
 
+void DisplayCube() {
+	int X, Y, Z;
+	X = Y = 10;
+	Z = 100;
+
+	glColor3f(0, 1, 0);
+	glBegin(GL_QUADS);
+	glVertex3f(0, X, 0);
+	glVertex3f(X, X, 0);
+	glVertex3f(X, X, X);
+	glVertex3f(0, X, X);
+	glEnd();
+
+	glColor3f(1, 1, 0);
+	glBegin(GL_QUADS);
+	glVertex3f(X, X, 0);
+	glVertex3f(X, 0, 0);
+	glVertex3f(X, 0, X);
+	glVertex3f(X, X, X);
+	glEnd();
+
+
+
+	glColor3f(1, 0, 0);
+	glBegin(GL_QUADS);
+	glVertex3f(0, X, X);
+	glVertex3f(X, X, X);
+	glVertex3f(X, 0, X);
+	glVertex3f(0, 0, X);
+	glEnd();
+}
+
 // rotatia cu un unghi de 10 grade in raport cu axa x
 void DisplayX() {
 	glMatrixMode(GL_MODELVIEW);
@@ -253,6 +285,30 @@ void DisplayT() {
 void DisplayS() {
 	glMatrixMode(GL_MODELVIEW);
 	glScalef(1.2, 1.2, 1.2);
+}
+
+void MakeRotations(float beta) {
+	float c = cosf(beta);
+	float s = sinf(beta);
+	float t = 1 - c;
+
+	float R31 = t / 3.0 - s / sqrt(3);
+	float R32  = t / 3.0 + s / sqrt(3);
+	float R33 = t / 3.0 + c;
+
+	float R11 = R33;
+	float R21 = R32;
+
+	float teta = PI + asinf(R31);
+	float cteta = cosf(teta);
+	float psi = atan2f(R32 / cteta, R33 / cteta);
+	float phi = atan2f(R21 / cteta, R11 / cteta);
+
+	printf("%f %f %f\n", phi * 180 / PI, teta * 180 / PI, psi * 180 / PI);
+
+	glRotatef(phi * 180 / PI, 0, 0, 1);
+	glRotatef(teta * 180 / PI, 0, 1, 0);
+	glRotatef(psi * 180 / PI, 1, 0, 0);
 }
 
 void Init(void) {
@@ -333,10 +389,7 @@ void Display(void) {
 		break;
 	case 'b':
 		glClear(GL_COLOR_BUFFER_BIT);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotated(20, 1, 0, 0);
-		glRotated(-20, 0, 1, 0);
+		glPushMatrix();
 
 		DisplayAxe();
 		Display51();
@@ -344,29 +397,26 @@ void Display(void) {
 	case 'c':
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotated(20, 1, 0, 0);
-		glRotated(-20, 0, 1, 0);
 
 		DisplayAxe();
+		glPushMatrix();
 		Display52();
 		break;
 	case 'd':
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotated(20, 1, 0, 0);
-		glRotated(-20, 0, 1, 0);
+		glPopMatrix();
+		glPushMatrix();
 
 		DisplayAxe();
 		Display53();
+	
 		break;
 	case 'e':
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotated(20, 1, 0, 0);
-		glRotated(-20, 0, 1, 0);
+		glPopMatrix();
+		glPushMatrix();
 
 		DisplayAxe();
 		Display54();
@@ -374,13 +424,32 @@ void Display(void) {
 	case 'f':
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		glPushMatrix();
+		DisplayAxe();
+
+		Display55();
+
+		break;
+	case 'g':
+		glClear(GL_COLOR_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glRotated(20, 1, 0, 0);
-		glRotated(-20, 0, 1, 0);
+		glRotated(35, 1, 0, 0);
+		glRotated(-42.5, 0, 1, 0);
 
 		DisplayAxe();
-		Display55();
+		DisplayCube();
 		break;
+	case 'h':
+		glClear(GL_COLOR_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+
+		DisplayAxe();
+		MakeRotations(PI / 4);
+		DisplayCube();
+		break;
+
 	default:
 		break;
 	}

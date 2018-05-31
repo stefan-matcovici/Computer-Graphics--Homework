@@ -4,9 +4,11 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 // dimensiunea ferestrei in pixeli
 #define dim 300
+#define PI 3.141592653592
 
 unsigned char prevKey;
 GLint k;
@@ -14,10 +16,11 @@ GLint k;
 GLdouble lat = 5;
 
 void proiectieParalela(unsigned char);
+void proiectiePerspectiva(unsigned char);
 void DisplayAxe();
 void InitObiect();
 void DisplayObiect();
-
+void getShear(float angle1, float angle2, GLfloat* shear);
 
 void Init(void) {
 	glClearColor(1, 1, 1, 1);
@@ -36,8 +39,8 @@ void Init(void) {
 	glLoadIdentity();
 }
 
-void Display()
-{
+void Display(){
+
 	switch (prevKey)
 	{
 	case '0':
@@ -104,6 +107,44 @@ void Display()
 		DisplayObiect();
 		glPopMatrix();
 		break;
+	case 'e':
+		// proiectie paralela ortografica frontala (spate)
+		proiectieParalela('e');
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glPushMatrix();
+		glTranslated(0, 0, -lat);
+		glTranslated(lat / 2.0, lat / 2.0, lat / 2.0);
+		glRotated(90, 1, 0, 0);
+		glTranslated(-lat / 2.0, -lat / 2.0, -lat / 2.0);
+		DisplayAxe();
+		DisplayObiect();
+		glPopMatrix();
+		break;
+	case 'r':
+		// proiectie perspectiva
+		proiectiePerspectiva('r');
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslated(-1 * lat, -lat, -lat * 2.5);
+		glScalef(1, 1, 1.25);
+		DisplayAxe();
+		DisplayObiect();
+		glPopMatrix();
+		break;
+	case 't':
+		// proiectie perspectiva
+		proiectieParalela('t');
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		DisplayAxe();
+		DisplayObiect();
+		glPopMatrix();
+		break;
 	default:
 		break;
 	}
@@ -165,11 +206,43 @@ void proiectieParalela(unsigned char c) {
 		break;
 	case 'q':
 	case 'w':
-		glOrtho(-1, 6, -1, 6, -1, 20);
+	case 'e':
+		glOrtho(-1, 6, -1, 6, -1, 10);
+		break;
+	case 't':
+		GLfloat shear[16];
+		getShear(PI / 6, PI / 4, shear);
+		glLoadMatrixf(shear);
+		glOrtho(-5, 5, -5, 5, -10, 10);
+		glScaled(0.5, 0.5, 0.25);
+		glTranslatef(-lat / 2, -lat / 2, -lat / 2);
 		break;
 	default:
 		break;
 	}
+}
+
+void proiectiePerspectiva(unsigned char c) {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	switch (c) {
+	case 'r':
+		glFrustum(-5.0, 5.0, -5.0, 5.0, 4, 20.0);
+		glTranslated(-lat / 1.1, -lat / 1.1, -lat / 0.7);
+	default:
+		break;
+	}
+}
+
+void getShear(float angle1, float angle2, GLfloat* shear) {
+	GLfloat local_shear[16] = {
+		1,                                       0, 0, 0,
+		0,                                       1, 0, 0,
+		(cos(angle1) / sin(angle1)),	(cos(angle2) / sin(angle2)), 1, 0,
+		0,                                       0, 0, 1
+	};
+
+	memcpy(shear, local_shear, 16 * sizeof(GLfloat));
 }
 
 void DisplayAxe() {

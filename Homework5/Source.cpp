@@ -205,6 +205,7 @@ public:
 		float rx = (2.0 / (double)this->columns * (x + raza) - 1) / xmax;
 		float ry = (2.0 / (double)this->lines * y - 1) / ymax;
 
+
 		double r = rx - cx;
 
 		int num_segments = 1000;
@@ -305,7 +306,7 @@ public:
 		glEnd();
 		glLineWidth(1.f);
 
-		std::vector<Punct> list = deseneazaElipsaAlgoritm(x, y, a, b, stoke);
+		std::vector<Punct> list = deseneazaElipsaAlgoritm(y, x, b, a, stoke);
 
 		for (std::vector<Punct>::iterator it = list.begin(); it != list.end(); ++it) {
 			deseneazaPixel(it->getX(), it->getY());
